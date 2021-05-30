@@ -1,0 +1,44 @@
+{
+  "name": "mercury-workspace",
+  "version": "0.1.0",
+  "description": "Manage projects and sessions for users of Mercury.",
+  "main": "src/server.ts",
+  "scripts": {
+    "dev": "nodemon --watch 'src/**/*'",
+    "lint": "eslint . --ext .ts && prettier -c .",
+    "start": "ts-node src/server.ts",
+    "test": "echo 'No tests added yet'"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/koa": "^2.13.3",
+    "@types/koa-bodyparser": "^4.3.0",
+    "@types/koa-compress": "^4.0.1",
+    "@types/koa-helmet": "^6.0.2",
+    "@types/koa__cors": "^3.0.2",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "eslint": "^7.27.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-no-loops": "^0.3.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "husky": "^6.0.0",
+    "nodemon": "^2.0.7",
+    "prettier": "^2.3.0",
+    "ts-node": "^10.0.0",
+    "tslib": "^2.2.0",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "@koa/cors": "^3.1.0",
+    "axios": "^0.21.1",
+    "koa": "^2.13.1",
+    "koa-bodyparser": "^4.3.0",
+    "koa-compress": "^5.0.1",
+    "koa-helmet": "^6.1.0",
+    "koa-router": "^10.0.0"
+  }
+}
