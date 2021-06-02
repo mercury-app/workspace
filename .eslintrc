@@ -1,6 +1,11 @@
 {
   "root": true,
+  "env": { "es6": true },
   "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "ecmaFeatures": { "impliedStrict": true }
+  },
   "plugins": ["@typescript-eslint", "no-loops", "promise"],
   "extends": [
     "eslint:recommended",

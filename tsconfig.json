@@ -2,6 +2,7 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules/*", "public/*"],
   "compilerOptions": {
-    "importsNotUsedAsValues": "remove"
+    "importsNotUsedAsValues": "remove",
+    "target": "es6"
   }
 }
