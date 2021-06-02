@@ -4,7 +4,7 @@ import * as compress from "koa-compress";
 import * as cors from "@koa/cors";
 import * as helmet from "koa-helmet";
 
-import { jsonApiContent } from "./middleware";
+import { jsonApiBody, jsonApiContent } from "./middleware";
 
 const server = new koa();
 server
@@ -12,6 +12,7 @@ server
   .use(compress())
   .use(cors())
   .use(bodyParser())
-  .use(jsonApiContent);
+  .use(jsonApiContent)
+  .use(jsonApiBody);
 
 server.listen(4000);
