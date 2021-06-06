@@ -20,12 +20,12 @@ export interface ProjectJson extends Object {
 
 export class Project {
   private readonly _id: string;
-  private _path: string;
-  private _stateFilesDir: string;
-  private _notebooksDir: string;
-  private _canvasJsonPath: string;
+  private readonly _path: string;
+  private readonly _stateFilesDir: string;
+  private readonly _notebooksDir: string;
+  private readonly _canvasJsonPath: string;
+  private readonly _dagJsonPath: string;
   private _canvas: Record<string, unknown>;
-  private _dagJsonPath: string;
   private _dag: Record<string, unknown>;
 
   constructor(id = "") {
@@ -43,8 +43,8 @@ export class Project {
     this._notebooksDir = `${this._path}/notebooks`;
 
     this._canvasJsonPath = `${this._stateFilesDir}/${canvasJsonFilename}`;
-    this._canvas = {};
     this._dagJsonPath = `${this._stateFilesDir}/${dagJsonFilename}`;
+    this._canvas = {};
     this._dag = {};
 
     if (isNewProject) {
@@ -131,12 +131,17 @@ export class Project {
     return this._id;
   }
 
+  get path(): string {
+    return this._path;
+  }
+
   get canvas(): Record<string, unknown> {
     return this._canvas;
   }
 
   set canvas(canvas: Record<string, unknown>) {
     this._canvas = canvas;
+    this._writeObjectToJsonFile(this._canvas, this._canvasJsonPath);
   }
 
   get dag(): Record<string, unknown> {
@@ -145,6 +150,7 @@ export class Project {
 
   set dag(dag: Record<string, unknown>) {
     this._dag = dag;
+    this._writeObjectToJsonFile(this._dag, this._dagJsonPath);
   }
 
   public asJson(): ProjectJson {

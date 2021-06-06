@@ -1,5 +1,6 @@
 import * as router from "koa-joi-router";
 
+import { ConflictError, ForbiddenError } from "../../common";
 import projectsService from "./service";
 
 const projects = router();
@@ -33,8 +34,20 @@ projects.get("/projects/:project", async (ctx) => {
 });
 
 projects.patch("/projects/:project", async (ctx) => {
-  const project = await projectsService.update(ctx.project.id);
-  ctx.body = { data: project };
+  try {
+    const project = await projectsService.update(
+      ctx.project.id,
+      ctx.request.body["data"]["attributes"]
+    );
+    ctx.body = { data: project };
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      ctx.throw(409, `Conflict: ${error.message}`);
+    }
+    if (error instanceof ForbiddenError) {
+      ctx.throw(403, `Forbidden: ${error.message}`);
+    }
+  }
 });
 
 projects.delete("/projects/:project", async (ctx) => {

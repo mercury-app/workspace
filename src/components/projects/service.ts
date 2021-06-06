@@ -1,6 +1,7 @@
 import * as fs from "fs";
 
 import config from "../../config";
+import { ConflictError, ForbiddenError } from "../../common";
 import { Project, ProjectJson } from "./model";
 
 const projectCache = new Map<string, Project>();
@@ -30,12 +31,50 @@ const projectsService = {
     return project.asJson();
   },
 
-  update: async (id: string): Promise<ProjectJson> => {
+  update: async (
+    id: string,
+    attributes: Record<string, unknown>
+  ): Promise<ProjectJson> => {
+    let project: Project = null;
     if (projectCache.has(id)) {
-      return projectCache.get(id).asJson();
+      project = projectCache.get(id);
+    } else {
+      project = new Project(id);
     }
 
-    const project = new Project(id);
+    const attributeNames = new Set(Object.keys(attributes));
+    const restrictedAttributeNames = new Set(["path", "notebooks_dir"]);
+    const recognizedAttributeNames = new Set(["canvas", "dag"]);
+
+    const conflicts = new Set(
+      [...attributeNames].filter((i) => restrictedAttributeNames.has(i))
+    );
+    if (conflicts.size > 0) {
+      throw new ConflictError(
+        `the following attributes cannot be modified: ${[
+          ...conflicts.keys(),
+        ].join(", ")}`
+      );
+    }
+
+    const unrecognized = new Set(
+      [...attributeNames].filter((i) => !recognizedAttributeNames.has(i))
+    );
+    if (unrecognized.size > 0) {
+      throw new ForbiddenError(
+        `the following attributes are not recognized: ${[
+          ...unrecognized.keys(),
+        ].join(", ")}`
+      );
+    }
+
+    if (attributeNames.has("canvas")) {
+      project.canvas = attributes["canvas"] as Record<string, unknown>;
+    }
+    if (attributeNames.has("dag")) {
+      project.dag = attributes["dag"] as Record<string, unknown>;
+    }
+
     return project.asJson();
   },
 
