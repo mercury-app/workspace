@@ -5,6 +5,7 @@ import config from "../../config";
 
 const canvasJsonFilename = "canvas.json";
 const dagJsonFilename = "dag.json";
+const projectsType = "projects";
 
 export interface ProjectJson extends Object {
   id: string;
@@ -27,15 +28,23 @@ export class Project {
   constructor(id = "") {
     this._id = id;
 
+    let isNewProject = false;
+    if (this._id === "") {
+      isNewProject = true;
+      this._id = uuid.v4();
+    }
+
     const projectParentDirPath = config.projectsDirPath;
     this._path = `${projectParentDirPath}/${this._id}`;
     this._canvasJsonPath = `${this._path}/${canvasJsonFilename}`;
+    this._canvas = {};
     this._dagJsonPath = `${this._path}/${dagJsonFilename}`;
+    this._dag = {};
 
-    if (this._id === "") {
-      // Create a new project if the project ID was empty
-      this._id = uuid.v4();
+    if (isNewProject) {
       this._createProjectDir();
+      this._addProjectEntryToDb();
+      this._writeProjectFiles();
     } else {
       this._readProjectFiles();
     }
@@ -50,6 +59,37 @@ export class Project {
       return false;
     }
     return true;
+  }
+
+  private _removeProjectDir(): void {
+    fs.rmSync(this._path, { recursive: true, force: true });
+  }
+
+  private _addProjectEntryToDb(): void {
+    const projectsDbPath = config.projectsDbPath;
+    let projectsData = fs.readFileSync(projectsDbPath, {
+      encoding: "utf-8",
+      flag: "r",
+    });
+    const projects = JSON.parse(projectsData);
+    projects.push({
+      id: this._id,
+      type: projectsType,
+    });
+    projectsData = JSON.stringify(projects);
+    fs.writeFileSync(projectsDbPath, projectsData, { encoding: "utf-8" });
+  }
+
+  private _removeProjectEntryFromDb(): void {
+    const projectsDbPath = config.projectsDbPath;
+    let projectsData = fs.readFileSync(projectsDbPath, {
+      encoding: "utf-8",
+      flag: "r",
+    });
+    let projects = JSON.parse(projectsData);
+    projects = projects.filter((project: Project) => project.id !== this._id);
+    projectsData = JSON.stringify(projects);
+    fs.writeFileSync(projectsDbPath, projectsData, { encoding: "utf-8" });
   }
 
   private _readProjectFiles(): void {
@@ -98,7 +138,7 @@ export class Project {
   public asJson(): ProjectJson {
     return {
       id: this._id,
-      type: "projects",
+      type: projectsType,
       attributes: {
         path: this._path,
         canvas: this._canvas,
@@ -108,11 +148,12 @@ export class Project {
   }
 
   public commit(): string {
-    // TOOD: implement this
+    // TODO: implement this
     return "commit-sha";
   }
 
   public delete(): void {
-    return;
+    this._removeProjectDir();
+    this._removeProjectEntryFromDb();
   }
 }

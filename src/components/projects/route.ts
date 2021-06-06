@@ -17,7 +17,7 @@ projects.get("/projects", async (ctx) => {
   ctx.body = { data: projects };
 });
 
-projects.post("/projects/", async (ctx) => {
+projects.post("/projects", async (ctx) => {
   const project = await projectsService.create();
   ctx.body = { data: project };
 });
@@ -33,6 +33,7 @@ projects.patch("/projects/:project", async (ctx) => {
 
 projects.delete("/projects/:project", async (ctx) => {
   await projectsService.delete(ctx.project.id);
+  ctx.status = 204;
 });
 
 export default projects;
