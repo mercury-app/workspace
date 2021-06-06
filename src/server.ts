@@ -5,7 +5,7 @@ import * as cors from "@koa/cors";
 import * as helmet from "koa-helmet";
 
 import { jsonApiBody, jsonApiContent } from "./middleware";
-import projects from "./routes/projects";
+import projects from "./components/projects/route";
 
 const server = new koa();
 server
