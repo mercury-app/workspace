@@ -6,6 +6,9 @@ const projects = router();
 
 // The handler here executes whenever we have a path param in any of the routes
 projects.param("project", async (id, ctx, next) => {
+  if (ctx.request.body["data"]["id"] !== id) {
+    ctx.throw(409, "Conflict: request data ID does not match endpoint ID");
+  }
   const project = await projectsService.read(id);
   if (!project) return (ctx.status = 404);
   ctx["project"] = project;
@@ -18,6 +21,9 @@ projects.get("/projects", async (ctx) => {
 });
 
 projects.post("/projects", async (ctx) => {
+  if (ctx.request.body["data"]["type"] !== "projects") {
+    ctx.throw(409, "Conflict: resource type does not match resource endpoint");
+  }
   const project = await projectsService.create();
   ctx.body = { data: project };
 });
