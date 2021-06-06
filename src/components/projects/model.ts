@@ -14,12 +14,15 @@ export interface ProjectJson extends Object {
     path: string;
     canvas: Record<string, unknown>;
     dag: Record<string, unknown>;
+    notebooks_dir: string;
   };
 }
 
 export class Project {
   private readonly _id: string;
   private _path: string;
+  private _stateFilesDir: string;
+  private _notebooksDir: string;
   private _canvasJsonPath: string;
   private _canvas: Record<string, unknown>;
   private _dagJsonPath: string;
@@ -36,9 +39,12 @@ export class Project {
 
     const projectParentDirPath = config.projectsDirPath;
     this._path = `${projectParentDirPath}/${this._id}`;
-    this._canvasJsonPath = `${this._path}/${canvasJsonFilename}`;
+    this._stateFilesDir = `${this._path}/.mercury`;
+    this._notebooksDir = `${this._path}/notebooks`;
+
+    this._canvasJsonPath = `${this._stateFilesDir}/${canvasJsonFilename}`;
     this._canvas = {};
-    this._dagJsonPath = `${this._path}/${dagJsonFilename}`;
+    this._dagJsonPath = `${this._stateFilesDir}/${dagJsonFilename}`;
     this._dag = {};
 
     if (isNewProject) {
@@ -54,6 +60,12 @@ export class Project {
     try {
       if (!fs.existsSync(this._path)) {
         fs.mkdirSync(this._path);
+      }
+      if (!fs.existsSync(this._stateFilesDir)) {
+        fs.mkdirSync(this._stateFilesDir);
+      }
+      if (!fs.existsSync(this._notebooksDir)) {
+        fs.mkdirSync(this._notebooksDir);
       }
     } catch (exception) {
       return false;
@@ -143,6 +155,7 @@ export class Project {
         path: this._path,
         canvas: this._canvas,
         dag: this._dag,
+        notebooks_dir: this._notebooksDir,
       },
     };
   }
