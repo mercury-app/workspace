@@ -7,7 +7,10 @@ const projects = router();
 
 // The handler here executes whenever we have a path param in any of the routes
 projects.param("project", async (id, ctx, next) => {
-  if (ctx.request.body["data"]["id"] !== id) {
+  if (
+    ctx.request.method !== "DELETE" &&
+    ctx.request.body["data"]["id"] !== id
+  ) {
     ctx.throw(409, "Conflict: request data ID does not match endpoint ID");
   }
   const project = await projectsService.read(id);
