@@ -19,6 +19,9 @@ if (!fs.existsSync(projectsDbPath)) {
 const config = {
   projectsDirPath: projectsDirPath,
   projectsDbPath: projectsDbPath,
+  defaultCommitAuthorName: "Mercury",
+  defaultCommitAuthorEmail: "auto.commit@mercury",
+  defaultCommitMessage: "Auto-committed changes to files",
 };
 
 export default config;

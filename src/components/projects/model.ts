@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as uuid from "uuid";
+import git from "isomorphic-git";
 
 import config from "../../config";
 
@@ -27,6 +28,7 @@ export class Project {
   private readonly _dagJsonPath: string;
   private _canvas: Record<string, unknown>;
   private _dag: Record<string, unknown>;
+  private _repo: { fs: typeof fs; dir: string };
 
   constructor(id = "") {
     this._id = id;
@@ -47,10 +49,14 @@ export class Project {
     this._canvas = {};
     this._dag = {};
 
+    // A convenience structure that is passed in calls to isomorphic git APIs
+    this._repo = { fs, dir: this._path };
+
     if (isNewProject) {
       this._createProjectDir();
       this._addProjectEntryToDb();
       this._writeProjectFiles();
+      this._initRepo();
     } else {
       this._readProjectFiles();
     }
@@ -127,6 +133,15 @@ export class Project {
     fs.writeFileSync(path, data, { encoding: "utf-8" });
   }
 
+  public async _initRepo(): Promise<void> {
+    await git.init(this._repo);
+    await this.commit(
+      config.defaultCommitAuthorName,
+      config.defaultCommitAuthorEmail,
+      "Initial commit"
+    );
+  }
+
   get id(): string {
     return this._id;
   }
@@ -166,9 +181,34 @@ export class Project {
     };
   }
 
-  public commit(): string {
-    // TODO: implement this
-    return "commit-sha";
+  public async commit(
+    authorName: string,
+    authorEmail: string,
+    message: string
+  ): Promise<string> {
+    // The following is equivalent to `git add -A .`
+    await git
+      .statusMatrix(this._repo)
+      .then((status) =>
+        Promise.all(
+          status.map(([filepath, , workingTreeStatus]) =>
+            workingTreeStatus
+              ? git.add({ ...this._repo, filepath })
+              : git.remove({ ...this._repo, filepath })
+          )
+        )
+      );
+
+    const sha = await git.commit({
+      ...this._repo,
+      author: {
+        name: authorName ? authorName : config.defaultCommitAuthorName,
+        email: authorEmail ? authorEmail : config.defaultCommitAuthorEmail,
+      },
+      message: message ? message : config.defaultCommitMessage,
+    });
+
+    return sha;
   }
 
   public delete(): void {

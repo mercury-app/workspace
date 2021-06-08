@@ -3,6 +3,7 @@
   "exclude": ["node_modules/*", "public/*"],
   "compilerOptions": {
     "importsNotUsedAsValues": "remove",
-    "target": "es6"
+    "target": "es6",
+    "moduleResolution": "node"
   }
 }
