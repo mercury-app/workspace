@@ -4,14 +4,10 @@ import git from "isomorphic-git";
 
 import config from "../../config";
 
-const canvasJsonFilename = "canvas.json";
-const dagJsonFilename = "dag.json";
-const projectsType = "projects";
-
 export interface ProjectJson extends Object {
   id: string;
   type: string;
-  attributes: {
+  attributes?: {
     path: string;
     canvas: Record<string, unknown>;
     dag: Record<string, unknown>;
@@ -19,7 +15,23 @@ export interface ProjectJson extends Object {
   };
 }
 
+export class Projects {
+  static readonly type = "projects";
+
+  static all(): Array<ProjectJson> {
+    const projectsDbPath = config.projectsDbPath;
+    const projectsData = fs.readFileSync(projectsDbPath, {
+      encoding: "utf-8",
+      flag: "r",
+    });
+    return JSON.parse(projectsData);
+  }
+}
+
 export class Project {
+  private static readonly _canvasJsonFilename = "canvas.json";
+  private static readonly _dagJsonFilename = "dag.json";
+
   private readonly _id: string;
   private readonly _path: string;
   private readonly _stateFilesDir: string;
@@ -32,10 +44,7 @@ export class Project {
 
   constructor(id = "") {
     this._id = id;
-
-    let isNewProject = false;
-    if (this._id === "") {
-      isNewProject = true;
+    if (!this._id) {
       this._id = uuid.v4();
     }
 
@@ -44,15 +53,15 @@ export class Project {
     this._stateFilesDir = `${this._path}/.mercury`;
     this._notebooksDir = `${this._path}/notebooks`;
 
-    this._canvasJsonPath = `${this._stateFilesDir}/${canvasJsonFilename}`;
-    this._dagJsonPath = `${this._stateFilesDir}/${dagJsonFilename}`;
+    this._canvasJsonPath = `${this._stateFilesDir}/${Project._canvasJsonFilename}`;
+    this._dagJsonPath = `${this._stateFilesDir}/${Project._dagJsonFilename}`;
     this._canvas = {};
     this._dag = {};
 
     // A convenience structure that is passed in calls to isomorphic git APIs
     this._repo = { fs, dir: this._path };
 
-    if (isNewProject) {
+    if (!fs.existsSync(this._path)) {
       this._createProjectDir();
       this._addProjectEntryToDb();
       this._writeProjectFiles();
@@ -92,7 +101,7 @@ export class Project {
     const projects = JSON.parse(projectsData);
     projects.push({
       id: this._id,
-      type: projectsType,
+      type: Projects.type,
     });
     projectsData = JSON.stringify(projects);
     fs.writeFileSync(projectsDbPath, projectsData, { encoding: "utf-8" });
@@ -171,7 +180,7 @@ export class Project {
   public asJson(): ProjectJson {
     return {
       id: this._id,
-      type: projectsType,
+      type: Projects.type,
       attributes: {
         path: this._path,
         canvas: this._canvas,

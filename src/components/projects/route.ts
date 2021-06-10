@@ -1,6 +1,7 @@
 import * as router from "koa-joi-router";
 
 import { ConflictError, ForbiddenError } from "../../common";
+import { Projects } from "./model";
 import projectsService from "./service";
 
 const projects = router();
@@ -25,7 +26,7 @@ projects.get("/projects", async (ctx) => {
 });
 
 projects.post("/projects", async (ctx) => {
-  if (ctx.request.body["data"]["type"] !== "projects") {
+  if (ctx.request.body["data"]["type"] !== Projects.type) {
     ctx.throw(409, "Conflict: resource type does not match resource endpoint");
   }
   const project = await projectsService.create();

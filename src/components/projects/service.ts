@@ -1,19 +1,11 @@
-import * as fs from "fs";
-
-import config from "../../config";
 import { ConflictError, ForbiddenError } from "../../common";
-import { Project, ProjectJson } from "./model";
+import { Projects, Project, ProjectJson } from "./model";
 
 const projectCache = new Map<string, Project>();
 
 const projectsService = {
   readAll: async (): Promise<Array<ProjectJson>> => {
-    const projectsDbPath = config.projectsDbPath;
-    const projectsData = fs.readFileSync(projectsDbPath, {
-      encoding: "utf-8",
-      flag: "r",
-    });
-    return JSON.parse(projectsData);
+    return Projects.all();
   },
 
   create: async (): Promise<ProjectJson> => {
