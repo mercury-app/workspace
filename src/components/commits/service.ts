@@ -1,10 +1,10 @@
 import { UnprocessableEntityError } from "../../errors";
 import { Commits, Commit, CommitJson } from "./model";
-import { Project } from "../projects/model";
+import { Project, ProjectJson } from "../projects/model";
 import config from "../../config";
 
 const commitsService = {
-  readAll: async (project: Project): Promise<Array<CommitJson>> => {
+  readAll: async (project: ProjectJson): Promise<Array<CommitJson>> => {
     const commits = await Commits.multipleFrom(
       project,
       config.defaultPageSize,
@@ -13,16 +13,20 @@ const commitsService = {
     return commits.map((commit) => commit.toJson());
   },
 
-  exists: async (project: Project, sha: string): Promise<boolean> => {
+  exists: async (project: ProjectJson, sha: string): Promise<boolean> => {
     return Commit.exists(project, sha);
   },
 
   create: async (
-    project: Project,
+    projectJson: ProjectJson,
     attributes: Record<string, unknown>
   ): Promise<CommitJson> => {
+    if (!attributes) {
+      throw new UnprocessableEntityError("commit attributes are missing");
+    }
+
     const commitMessage = attributes["message"] as string;
-    if (commitMessage) {
+    if (!commitMessage) {
       throw new UnprocessableEntityError("commit message is missing");
     }
 
@@ -32,17 +36,19 @@ const commitsService = {
     const authorEmail = attributes["author_email"]
       ? (attributes["author_email"] as string)
       : config.defaultCommitAuthorEmail;
+    const project = new Project(projectJson.id);
     const commitSha = await project.commit(
       authorName,
       authorEmail,
       commitMessage
     );
-    const commit = await Commit.exact(project, commitSha);
+
+    const commit = await Commit.exact(projectJson, commitSha);
     return commit.toJson();
   },
 
-  read: async (project: Project, id: string): Promise<CommitJson> => {
-    const commit = await Commit.exact(project, id);
+  read: async (projectJson: ProjectJson, id: string): Promise<CommitJson> => {
+    const commit = await Commit.exact(projectJson, id);
     return commit.toJson();
   },
 };

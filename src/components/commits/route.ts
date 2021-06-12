@@ -1,7 +1,7 @@
 import * as router from "koa-joi-router";
 
 import { UnprocessableEntityError } from "../../errors";
-import { Project } from "../projects/model";
+import { ProjectJson } from "../projects/model";
 import projectsService from "../projects/service";
 import commitsService from "./service";
 
@@ -24,7 +24,7 @@ commits.param("commit", async (id, ctx, next) => {
     ctx.throw(409, "Conflict: request data ID does not match endpoint ID");
   }
 
-  const project = ctx["project"] as Project;
+  const project = ctx["project"] as ProjectJson;
   const commitExists = await commitsService.exists(project, id);
   if (!commitExists) {
     ctx.throw(404, `Not Found: commit with ID '${id}' does not exist`);
@@ -61,3 +61,5 @@ commits.post("/projects/:project/commits", async (ctx) => {
 commits.get("/projects/:project/commits/:commit", async (ctx) => {
   ctx.body = { data: ctx.commit };
 });
+
+export default commits;

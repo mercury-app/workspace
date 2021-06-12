@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import git, { CommitObject } from "isomorphic-git";
 
-import { Project } from "../projects/model";
+import { ProjectJson } from "../projects/model";
 
 export interface CommitJson extends Object {
   id: string;
@@ -21,18 +21,18 @@ export class Commits {
   static readonly type = "commits";
 
   static async multipleFrom(
-    project: Project,
+    projectJson: ProjectJson,
     n: number,
     from: string
   ): Promise<Array<Commit>> {
     const commitResults = await git.log({
       fs,
-      dir: project.path,
+      dir: projectJson.attributes.path,
       depth: n,
       ref: from,
     });
     const commits = commitResults.map(
-      (result) => new Commit(project, result.oid, result.commit)
+      (result) => new Commit(projectJson, result.oid, result.commit)
     );
     return commits;
   }
@@ -48,30 +48,34 @@ export class Commit {
   private readonly _timestamp: number;
   private readonly _timezoneOffset: number;
 
-  static async exact(project: Project, sha: string): Promise<Commit> {
+  static async exact(projectJson: ProjectJson, sha: string): Promise<Commit> {
     const commitResults = await git.log({
       fs,
-      dir: project.path,
+      dir: projectJson.attributes.path,
       depth: 1,
       ref: sha,
     });
     if (commitResults.length === 0) {
       return null;
     }
-    return new Commit(project, commitResults[0].oid, commitResults[0].commit);
+    return new Commit(
+      projectJson,
+      commitResults[0].oid,
+      commitResults[0].commit
+    );
   }
 
-  static async exists(project: Project, sha: string): Promise<boolean> {
-    return (await Commit.exact(project, sha)) !== null;
+  static async exists(projectJson: ProjectJson, sha: string): Promise<boolean> {
+    return (await Commit.exact(projectJson, sha)) !== null;
   }
 
   constructor(
-    project: Project,
+    projectJson: ProjectJson,
     sha: string,
     commitObject: CommitObject = null
   ) {
     this._sha = sha;
-    this._projectId = project.id;
+    this._projectId = projectJson.id;
     this._parentCommitRefs = commitObject.parent;
     this._message = commitObject.message;
     this._authorName = commitObject.author.name;
