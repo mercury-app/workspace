@@ -1,4 +1,4 @@
-import { ConflictError, ForbiddenError } from "../../common";
+import { ConflictError, ForbiddenError } from "../../errors";
 import { Projects, Project, ProjectJson } from "./model";
 
 const projectCache = new Map<string, Project>();

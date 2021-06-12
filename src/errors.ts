@@ -1,4 +1,10 @@
-export class ConflictError extends Error {
+export class CustomError extends Error {
+  get detail(): string {
+    return `${this.name}: ${this.message}`;
+  }
+}
+
+export class ConflictError extends CustomError {
   constructor(message: string) {
     super(message);
     this.name = "ConflictError";
@@ -6,7 +12,7 @@ export class ConflictError extends Error {
   }
 }
 
-export class ForbiddenError extends Error {
+export class ForbiddenError extends CustomError {
   constructor(message: string) {
     super(message);
     this.name = "ForbiddenError";
@@ -14,7 +20,7 @@ export class ForbiddenError extends Error {
   }
 }
 
-export class UnprocessableEntityError extends Error {
+export class UnprocessableEntityError extends CustomError {
   constructor(message: string) {
     super(message);
     this.name = "UnprocessableEntityError";

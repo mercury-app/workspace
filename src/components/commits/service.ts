@@ -1,4 +1,4 @@
-import { UnprocessableEntityError } from "../../common";
+import { UnprocessableEntityError } from "../../errors";
 import { Commits, Commit, CommitJson } from "./model";
 import { Project } from "../projects/model";
 import config from "../../config";

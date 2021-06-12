@@ -1,6 +1,6 @@
 import * as router from "koa-joi-router";
 
-import { UnprocessableEntityError } from "../../common";
+import { UnprocessableEntityError } from "../../errors";
 import commitsService from "./service";
 import projectsService from "../projects/service";
 
@@ -42,7 +42,7 @@ commits.post("/projects/:project/commits", async (ctx) => {
     ctx.body = { data: commit };
   } catch (error) {
     if (error instanceof UnprocessableEntityError) {
-      ctx.throw(422, `Unprocessable Entity: ${error.message}`);
+      ctx.throw(422, error.detail);
     }
   }
 });
