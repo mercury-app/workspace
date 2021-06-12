@@ -14,8 +14,13 @@ projects.param("project", async (id, ctx, next) => {
   ) {
     ctx.throw(409, "Conflict: request data ID does not match endpoint ID");
   }
+
+  const projectExists = await projectsService.exists(id);
+  if (!projectExists) {
+    ctx.throw(404, `Not Found: project with ID '${id}' does not exist`);
+  }
+
   const project = await projectsService.read(id);
-  if (!project) return (ctx.status = 404);
   ctx["project"] = project;
   await next();
 });

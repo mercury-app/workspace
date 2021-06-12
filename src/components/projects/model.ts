@@ -42,6 +42,11 @@ export class Project {
   private _dag: Record<string, unknown>;
   private _repo: { fs: typeof fs; dir: string };
 
+  static exists(id: string): boolean {
+    const projects = Projects.all() as Array<ProjectJson>;
+    return projects.some((project) => project.id === id);
+  }
+
   constructor(id = "") {
     this._id = id;
     if (!this._id) {

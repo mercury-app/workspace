@@ -8,6 +8,10 @@ const projectsService = {
     return Projects.all();
   },
 
+  exists: async (id: string): Promise<boolean> => {
+    return Project.exists(id);
+  },
+
   create: async (): Promise<ProjectJson> => {
     const project = new Project();
     projectCache.set(project.id, project);
