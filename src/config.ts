@@ -22,6 +22,7 @@ const config = {
   defaultCommitAuthorName: "Mercury",
   defaultCommitAuthorEmail: "auto.commit@mercury",
   defaultCommitMessage: "Auto-committed changes to files",
+  defaultPageSize: 25,
 };
 
 export default config;

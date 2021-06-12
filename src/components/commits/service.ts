@@ -5,7 +5,16 @@ import config from "../../config";
 
 const commitsService = {
   readAll: async (project: Project): Promise<Array<CommitJson>> => {
-    return Commits.all(project);
+    const commits = await Commits.multipleFrom(
+      project,
+      config.defaultPageSize,
+      "HEAD"
+    );
+    return commits.map((commit) => commit.toJson());
+  },
+
+  exists: async (project: Project, sha: string): Promise<boolean> => {
+    return Commit.exists(project, sha);
   },
 
   create: async (
@@ -28,12 +37,12 @@ const commitsService = {
       authorEmail,
       commitMessage
     );
-    const commit = new Commit(project, commitSha);
+    const commit = await Commit.exact(project, commitSha);
     return commit.toJson();
   },
 
   read: async (project: Project, id: string): Promise<CommitJson> => {
-    const commit = new Commit(project, id);
+    const commit = await Commit.exact(project, id);
     return commit.toJson();
   },
 };
