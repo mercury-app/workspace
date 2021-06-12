@@ -20,7 +20,7 @@ commits.param("project", async (id, ctx, next) => {
 });
 
 commits.param("commit", async (id, ctx, next) => {
-  if (ctx.request.body["data"]["id"] !== id) {
+  if (ctx.request.method !== "GET" && ctx.request.body["data"]["id"] !== id) {
     ctx.throw(409, "Conflict: request data ID does not match endpoint ID");
   }
 
@@ -45,6 +45,7 @@ commits.post("/projects/:project/commits", async (ctx) => {
   if (requestData["type"] !== "commits") {
     ctx.throw(409, "Conflict: resource type does not match resource endpoint");
   }
+
   try {
     const commit = await commitsService.create(
       ctx["project"],

@@ -9,6 +9,7 @@ const projects = router();
 // The handler here executes whenever we have a path param in any of the routes
 projects.param("project", async (id, ctx, next) => {
   if (
+    ctx.request.method !== "GET" &&
     ctx.request.method !== "DELETE" &&
     ctx.request.body["data"]["id"] !== id
   ) {
