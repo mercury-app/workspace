@@ -1,5 +1,6 @@
 import * as router from "koa-joi-router";
 
+import { UnprocessableEntityError } from "../../common";
 import commitsService from "./service";
 import projectsService from "../projects/service";
 
@@ -33,11 +34,17 @@ commits.post("/projects/:project/commits", async (ctx) => {
   if (requestData["type"] !== "commits") {
     ctx.throw(409, "Conflict: resource type does not match resource endpoint");
   }
-  const commit = await commitsService.create(
-    ctx["project"],
-    requestData["attributes"]
-  );
-  ctx.body = { data: commit };
+  try {
+    const commit = await commitsService.create(
+      ctx["project"],
+      requestData["attributes"]
+    );
+    ctx.body = { data: commit };
+  } catch (error) {
+    if (error instanceof UnprocessableEntityError) {
+      ctx.throw(422, `Unprocessable Entity: ${error.message}`);
+    }
+  }
 });
 
 commits.get("/projects/:project/commits/:commit", async (ctx) => {

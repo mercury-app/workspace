@@ -11,16 +11,16 @@ const projectsService = {
   create: async (): Promise<ProjectJson> => {
     const project = new Project();
     projectCache.set(project.id, project);
-    return project.asJson();
+    return project.toJson();
   },
 
   read: async (id: string): Promise<ProjectJson> => {
     if (projectCache.has(id)) {
-      return projectCache.get(id).asJson();
+      return projectCache.get(id).toJson();
     }
 
     const project = new Project(id);
-    return project.asJson();
+    return project.toJson();
   },
 
   update: async (
@@ -67,7 +67,7 @@ const projectsService = {
       project.dag = attributes["dag"] as Record<string, unknown>;
     }
 
-    return project.asJson();
+    return project.toJson();
   },
 
   delete: async (id: string): Promise<void> => {

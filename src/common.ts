@@ -13,3 +13,11 @@ export class ForbiddenError extends Error {
     this.message = message;
   }
 }
+
+export class UnprocessableEntityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnprocessableEntityError";
+    this.message = message;
+  }
+}

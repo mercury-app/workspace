@@ -177,7 +177,7 @@ export class Project {
     this._writeObjectToJsonFile(this._dag, this._dagJsonPath);
   }
 
-  public asJson(): ProjectJson {
+  public toJson(): ProjectJson {
     return {
       id: this._id,
       type: Projects.type,
