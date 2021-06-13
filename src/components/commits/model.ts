@@ -20,16 +20,10 @@ export interface CommitJson extends Object {
 export class Commits {
   static readonly type = "commits";
 
-  static async multipleFrom(
-    projectJson: ProjectJson,
-    n: number,
-    from: string
-  ): Promise<Array<Commit>> {
+  static async all(projectJson: ProjectJson): Promise<Array<Commit>> {
     const commitResults = await git.log({
       fs,
       dir: projectJson.attributes.path,
-      depth: n,
-      ref: from,
     });
     const commits = commitResults.map(
       (result) => new Commit(projectJson, result.oid, result.commit)
@@ -72,7 +66,7 @@ export class Commit {
   constructor(
     projectJson: ProjectJson,
     sha: string,
-    commitObject: CommitObject = null
+    commitObject: CommitObject
   ) {
     this._sha = sha;
     this._projectId = projectJson.id;

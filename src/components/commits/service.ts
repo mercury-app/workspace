@@ -5,11 +5,7 @@ import config from "../../config";
 
 const commitsService = {
   readAll: async (project: ProjectJson): Promise<Array<CommitJson>> => {
-    const commits = await Commits.multipleFrom(
-      project,
-      config.defaultPageSize,
-      "HEAD"
-    );
+    const commits = await Commits.all(project);
     return commits.map((commit) => commit.toJson());
   },
 
