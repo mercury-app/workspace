@@ -49,20 +49,20 @@ export class Commit {
   private readonly _timezoneOffset: number;
 
   static async exact(projectJson: ProjectJson, sha: string): Promise<Commit> {
-    const commitResults = await git.log({
-      fs,
-      dir: projectJson.attributes.path,
-      depth: 1,
-      ref: sha,
-    });
-    if (commitResults.length === 0) {
-      return null;
-    }
-    return new Commit(
-      projectJson,
-      commitResults[0].oid,
-      commitResults[0].commit
-    );
+    const commit = await git
+      .readCommit({
+        fs,
+        dir: projectJson.attributes.path,
+        oid: sha,
+      })
+      .then((commitResult) => {
+        return new Commit(projectJson, commitResult.oid, commitResult.commit);
+      })
+      .catch(() => {
+        return null;
+      });
+
+    return commit;
   }
 
   static async exists(projectJson: ProjectJson, sha: string): Promise<boolean> {
