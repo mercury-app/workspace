@@ -1,8 +1,13 @@
 import * as fs from "fs";
+import * as fsp from "fs/promises";
 import * as uuid from "uuid";
 import git from "isomorphic-git";
 
 import config from "../../config";
+
+interface ProjectsDbEntry extends Object {
+  id: string;
+}
 
 export interface ProjectJson extends Object {
   id: string;
@@ -18,13 +23,14 @@ export interface ProjectJson extends Object {
 export class Projects {
   static readonly type = "projects";
 
-  static all(): Array<ProjectJson> {
+  static async get(): Promise<Array<Project>> {
     const projectsDbPath = config.projectsDbPath;
-    const projectsData = fs.readFileSync(projectsDbPath, {
+    const projectsDbData = await fsp.readFile(projectsDbPath, {
       encoding: "utf-8",
       flag: "r",
     });
-    return JSON.parse(projectsData);
+    const projectsDbJson = JSON.parse(projectsDbData) as Array<ProjectsDbEntry>;
+    return Promise.all(projectsDbJson.map((obj) => Project.get(obj.id)));
   }
 }
 
@@ -40,19 +46,32 @@ export class Project {
   private readonly _dagJsonPath: string;
   private _canvas: Record<string, unknown>;
   private _dag: Record<string, unknown>;
-  private _repo: { fs: typeof fs; dir: string };
+  private _repo: { fs: typeof fsp; dir: string };
 
-  static exists(id: string): boolean {
-    const projects = Projects.all() as Array<ProjectJson>;
+  static async make(): Promise<Project> {
+    const id = uuid.v4();
+    const project = new Project(id);
+    project._createProjectDir();
+    project._addProjectEntryToDb();
+    project._writeProjectFiles();
+    project._initRepo();
+    project._readProjectFiles();
+    return project;
+  }
+
+  static async get(id: string): Promise<Project> {
+    const project = new Project(id);
+    project._readProjectFiles();
+    return project;
+  }
+
+  static async exists(id: string): Promise<boolean> {
+    const projects = await Projects.get();
     return projects.some((project) => project.id === id);
   }
 
-  constructor(id = "") {
+  private constructor(id: string) {
     this._id = id;
-    if (!this._id) {
-      this._id = uuid.v4();
-    }
-
     const projectParentDirPath = config.projectsDirPath;
     this._path = `${projectParentDirPath}/${this._id}`;
     this._stateFilesDir = `${this._path}/.mercury`;
@@ -64,28 +83,19 @@ export class Project {
     this._dag = {};
 
     // A convenience structure that is passed in calls to isomorphic git APIs
-    this._repo = { fs, dir: this._path };
-
-    if (!fs.existsSync(this._path)) {
-      this._createProjectDir();
-      this._addProjectEntryToDb();
-      this._writeProjectFiles();
-      this._initRepo();
-    } else {
-      this._readProjectFiles();
-    }
+    this._repo = { fs: fsp, dir: this._path };
   }
 
-  private _createProjectDir(): boolean {
+  private async _createProjectDir(): Promise<boolean> {
     try {
       if (!fs.existsSync(this._path)) {
-        fs.mkdirSync(this._path);
+        await fsp.mkdir(this._path);
       }
       if (!fs.existsSync(this._stateFilesDir)) {
-        fs.mkdirSync(this._stateFilesDir);
+        await fsp.mkdir(this._stateFilesDir);
       }
       if (!fs.existsSync(this._notebooksDir)) {
-        fs.mkdirSync(this._notebooksDir);
+        await fsp.mkdir(this._notebooksDir);
       }
     } catch (exception) {
       return false;
@@ -93,58 +103,59 @@ export class Project {
     return true;
   }
 
-  private _removeProjectDir(): void {
-    fs.rmSync(this._path, { recursive: true, force: true });
+  private async _removeProjectDir(): Promise<void> {
+    await fsp.rm(this._path, { recursive: true, force: true });
   }
 
-  private _addProjectEntryToDb(): void {
+  private async _addProjectEntryToDb(): Promise<void> {
     const projectsDbPath = config.projectsDbPath;
-    let projectsData = fs.readFileSync(projectsDbPath, {
+    let projectsData = await fsp.readFile(projectsDbPath, {
       encoding: "utf-8",
       flag: "r",
     });
     const projects = JSON.parse(projectsData);
     projects.push({
       id: this._id,
-      type: Projects.type,
     });
     projectsData = JSON.stringify(projects);
-    fs.writeFileSync(projectsDbPath, projectsData, { encoding: "utf-8" });
+    await fsp.writeFile(projectsDbPath, projectsData, { encoding: "utf-8" });
   }
 
-  private _removeProjectEntryFromDb(): void {
+  private async _removeProjectEntryFromDb(): Promise<void> {
     const projectsDbPath = config.projectsDbPath;
-    let projectsData = fs.readFileSync(projectsDbPath, {
+    let projectsData = await fsp.readFile(projectsDbPath, {
       encoding: "utf-8",
       flag: "r",
     });
     let projects = JSON.parse(projectsData);
     projects = projects.filter((project: Project) => project.id !== this._id);
     projectsData = JSON.stringify(projects);
-    fs.writeFileSync(projectsDbPath, projectsData, { encoding: "utf-8" });
+    await fsp.writeFile(projectsDbPath, projectsData, { encoding: "utf-8" });
   }
 
-  private _readProjectFiles(): void {
-    this._canvas = this._readJsonFileAsObject(this._canvasJsonPath);
-    this._dag = this._readJsonFileAsObject(this._dagJsonPath);
+  private async _readProjectFiles(): Promise<void> {
+    this._canvas = await this._readJsonFileAsObject(this._canvasJsonPath);
+    this._dag = await this._readJsonFileAsObject(this._dagJsonPath);
   }
 
-  private _readJsonFileAsObject(path: string): Record<string, unknown> {
-    const data = fs.readFileSync(path, { encoding: "utf-8", flag: "r" });
+  private async _readJsonFileAsObject(
+    path: string
+  ): Promise<Record<string, unknown>> {
+    const data = await fsp.readFile(path, { encoding: "utf-8", flag: "r" });
     return JSON.parse(data);
   }
 
-  private _writeProjectFiles(): void {
-    this._writeObjectToJsonFile(this._canvas, this._canvasJsonPath);
-    this._writeObjectToJsonFile(this._dag, this._dagJsonPath);
+  private async _writeProjectFiles(): Promise<void> {
+    await this._writeObjectToJsonFile(this._canvas, this._canvasJsonPath);
+    await this._writeObjectToJsonFile(this._dag, this._dagJsonPath);
   }
 
-  private _writeObjectToJsonFile(
+  private async _writeObjectToJsonFile(
     object: Record<string, unknown>,
     path: string
-  ) {
+  ): Promise<void> {
     const data = JSON.stringify(object);
-    fs.writeFileSync(path, data, { encoding: "utf-8" });
+    await fsp.writeFile(path, data, { encoding: "utf-8" });
   }
 
   public async _initRepo(): Promise<void> {
@@ -225,8 +236,8 @@ export class Project {
     return sha;
   }
 
-  public delete(): void {
-    this._removeProjectDir();
-    this._removeProjectEntryFromDb();
+  public async delete(): Promise<void> {
+    await this._removeProjectDir();
+    await this._removeProjectEntryFromDb();
   }
 }

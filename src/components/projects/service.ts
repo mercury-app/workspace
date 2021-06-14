@@ -5,7 +5,8 @@ const projectCache = new Map<string, Project>();
 
 const projectsService = {
   readAll: async (): Promise<Array<ProjectJson>> => {
-    return Projects.all();
+    const projects = await Projects.get();
+    return projects.map((project) => project.toJson());
   },
 
   exists: async (id: string): Promise<boolean> => {
@@ -13,7 +14,7 @@ const projectsService = {
   },
 
   create: async (): Promise<ProjectJson> => {
-    const project = new Project();
+    const project = await Project.make();
     projectCache.set(project.id, project);
     return project.toJson();
   },
@@ -23,7 +24,7 @@ const projectsService = {
       return projectCache.get(id).toJson();
     }
 
-    const project = new Project(id);
+    const project = await Project.get(id);
     return project.toJson();
   },
 
@@ -35,7 +36,7 @@ const projectsService = {
     if (projectCache.has(id)) {
       project = projectCache.get(id);
     } else {
-      project = new Project(id);
+      project = await Project.get(id);
     }
 
     const attributeNames = new Set(Object.keys(attributes));
@@ -80,7 +81,7 @@ const projectsService = {
       return;
     }
 
-    const project = new Project(id);
+    const project = await Project.get(id);
     project.delete();
   },
 };
