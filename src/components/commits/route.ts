@@ -1,6 +1,10 @@
 import * as router from "koa-joi-router";
 
-import { UnprocessableEntityError } from "../../errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  UnprocessableEntityError,
+} from "../../errors";
 import { ProjectJson } from "../projects/model";
 import projectsService from "../projects/service";
 import { Commits } from "./model";
@@ -54,6 +58,12 @@ commits.post("/projects/:project/commits", async (ctx) => {
     );
     ctx.body = { data: commit };
   } catch (error) {
+    if (error instanceof ConflictError) {
+      ctx.throw(409, error.detail);
+    }
+    if (error instanceof ForbiddenError) {
+      ctx.throw(403, error.detail);
+    }
     if (error instanceof UnprocessableEntityError) {
       ctx.throw(422, error.detail);
     }

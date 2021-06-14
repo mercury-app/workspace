@@ -1,7 +1,33 @@
-import { UnprocessableEntityError } from "../../errors";
+import { ForbiddenError, UnprocessableEntityError } from "../../errors";
 import { Commits, Commit, CommitJson } from "./model";
 import { Project, ProjectJson } from "../projects/model";
 import config from "../../config";
+
+const _validateCommitAttributes = (
+  attributes: Record<string, unknown>
+): void => {
+  if (!attributes) {
+    throw new UnprocessableEntityError("commit attributes are missing");
+  }
+
+  const attributeNames = new Set(Object.keys(attributes));
+  const recognizedAttributeNames = new Set([
+    "message",
+    "author_name",
+    "author_email",
+  ]);
+
+  const unrecognized = new Set(
+    [...attributeNames].filter((i) => !recognizedAttributeNames.has(i))
+  );
+  if (unrecognized.size > 0) {
+    throw new ForbiddenError(
+      `the following attributes are not recognized: ${[
+        ...unrecognized.keys(),
+      ].join(", ")}`
+    );
+  }
+};
 
 const commitsService = {
   readAll: async (projectJson: ProjectJson): Promise<Array<CommitJson>> => {
@@ -19,9 +45,7 @@ const commitsService = {
     projectJson: ProjectJson,
     attributes: Record<string, unknown>
   ): Promise<CommitJson> => {
-    if (!attributes) {
-      throw new UnprocessableEntityError("commit attributes are missing");
-    }
+    _validateCommitAttributes(attributes);
 
     const commitMessage = attributes["message"] as string;
     if (!commitMessage) {

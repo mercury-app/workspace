@@ -7,6 +7,40 @@ import { Projects, Project, ProjectJson } from "./model";
 
 const projectCache = new Map<string, Project>();
 
+const _validateProjectAttributes = (
+  attributes: Record<string, unknown>
+): void => {
+  if (!attributes) {
+    throw new UnprocessableEntityError("project attributes are missing");
+  }
+
+  const attributeNames = new Set(Object.keys(attributes));
+  const restrictedAttributeNames = new Set(["path", "notebooks_dir"]);
+  const recognizedAttributeNames = new Set(["name", "canvas", "dag"]);
+
+  const conflicts = new Set(
+    [...attributeNames].filter((i) => restrictedAttributeNames.has(i))
+  );
+  if (conflicts.size > 0) {
+    throw new ConflictError(
+      `the following attributes cannot be modified: ${[
+        ...conflicts.keys(),
+      ].join(", ")}`
+    );
+  }
+
+  const unrecognized = new Set(
+    [...attributeNames].filter((i) => !recognizedAttributeNames.has(i))
+  );
+  if (unrecognized.size > 0) {
+    throw new ForbiddenError(
+      `the following attributes are not recognized: ${[
+        ...unrecognized.keys(),
+      ].join(", ")}`
+    );
+  }
+};
+
 const projectsService = {
   readAll: async (): Promise<Array<ProjectJson>> => {
     const projects = await Projects.get();
@@ -18,9 +52,7 @@ const projectsService = {
   },
 
   create: async (attributes: Record<string, unknown>): Promise<ProjectJson> => {
-    if (!attributes) {
-      throw new UnprocessableEntityError("project attributes are missing");
-    }
+    _validateProjectAttributes(attributes);
 
     const projectName = attributes["name"] as string;
     if (!projectName) {
@@ -52,32 +84,9 @@ const projectsService = {
       project = await Project.get(id);
     }
 
+    _validateProjectAttributes(attributes);
+
     const attributeNames = new Set(Object.keys(attributes));
-    const restrictedAttributeNames = new Set(["path", "notebooks_dir"]);
-    const recognizedAttributeNames = new Set(["name", "canvas", "dag"]);
-
-    const conflicts = new Set(
-      [...attributeNames].filter((i) => restrictedAttributeNames.has(i))
-    );
-    if (conflicts.size > 0) {
-      throw new ConflictError(
-        `the following attributes cannot be modified: ${[
-          ...conflicts.keys(),
-        ].join(", ")}`
-      );
-    }
-
-    const unrecognized = new Set(
-      [...attributeNames].filter((i) => !recognizedAttributeNames.has(i))
-    );
-    if (unrecognized.size > 0) {
-      throw new ForbiddenError(
-        `the following attributes are not recognized: ${[
-          ...unrecognized.keys(),
-        ].join(", ")}`
-      );
-    }
-
     if (attributeNames.has("canvas")) {
       project.canvas = attributes["canvas"] as Record<string, unknown>;
     }

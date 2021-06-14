@@ -45,6 +45,12 @@ projects.post("/projects", async (ctx) => {
     const project = await projectsService.create(requestData["attributes"]);
     ctx.body = { data: project };
   } catch (error) {
+    if (error instanceof ConflictError) {
+      ctx.throw(409, error.detail);
+    }
+    if (error instanceof ForbiddenError) {
+      ctx.throw(403, error.detail);
+    }
     if (error instanceof UnprocessableEntityError) {
       ctx.throw(422, error.detail);
     }
@@ -68,6 +74,9 @@ projects.patch("/projects/:project", async (ctx) => {
     }
     if (error instanceof ForbiddenError) {
       ctx.throw(403, error.detail);
+    }
+    if (error instanceof UnprocessableEntityError) {
+      ctx.throw(422, error.detail);
     }
   }
 });
