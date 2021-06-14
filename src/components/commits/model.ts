@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import git, { CommitObject } from "isomorphic-git";
 
-import { ProjectJson } from "../projects/model";
+import { Project } from "../projects/model";
 
 export interface CommitJson extends Object {
   id: string;
@@ -20,13 +20,13 @@ export interface CommitJson extends Object {
 export class Commits {
   static readonly type = "commits";
 
-  static async all(projectJson: ProjectJson): Promise<Array<Commit>> {
+  static async get(project: Project): Promise<Array<Commit>> {
     const commitResults = await git.log({
       fs,
-      dir: projectJson.attributes.path,
+      dir: project.path,
     });
-    const commits = commitResults.map(
-      (result) => new Commit(projectJson, result.oid, result.commit)
+    const commits = Promise.all(
+      commitResults.map((result) => Commit.get(project, result.oid))
     );
     return commits;
   }
@@ -42,15 +42,29 @@ export class Commit {
   private readonly _timestamp: number;
   private readonly _timezoneOffset: number;
 
-  static async exact(projectJson: ProjectJson, sha: string): Promise<Commit> {
+  static async make(
+    project: Project,
+    commitMessage: string,
+    authorName: string,
+    authorEmail: string
+  ): Promise<Commit> {
+    const commitSha = await project.commit(
+      authorName,
+      authorEmail,
+      commitMessage
+    );
+    return Commit.get(project, commitSha);
+  }
+
+  static async get(project: Project, sha: string): Promise<Commit> {
     const commit = await git
       .readCommit({
         fs,
-        dir: projectJson.attributes.path,
+        dir: project.path,
         oid: sha,
       })
       .then((commitResult) => {
-        return new Commit(projectJson, commitResult.oid, commitResult.commit);
+        return new Commit(project.id, commitResult.oid, commitResult.commit);
       })
       .catch(() => {
         return null;
@@ -59,17 +73,17 @@ export class Commit {
     return commit;
   }
 
-  static async exists(projectJson: ProjectJson, sha: string): Promise<boolean> {
-    return (await Commit.exact(projectJson, sha)) !== null;
+  static async exists(project: Project, sha: string): Promise<boolean> {
+    return (await Commit.get(project, sha)) !== null;
   }
 
-  constructor(
-    projectJson: ProjectJson,
+  private constructor(
+    projectId: string,
     sha: string,
     commitObject: CommitObject
   ) {
     this._sha = sha;
-    this._projectId = projectJson.id;
+    this._projectId = projectId;
     this._parentCommitRefs = commitObject.parent;
     this._message = commitObject.message;
     this._authorName = commitObject.author.name;

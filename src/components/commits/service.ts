@@ -4,13 +4,15 @@ import { Project, ProjectJson } from "../projects/model";
 import config from "../../config";
 
 const commitsService = {
-  readAll: async (project: ProjectJson): Promise<Array<CommitJson>> => {
-    const commits = await Commits.all(project);
+  readAll: async (projectJson: ProjectJson): Promise<Array<CommitJson>> => {
+    const project = await Project.get(projectJson.id);
+    const commits = await Commits.get(project);
     return commits.map((commit) => commit.toJson());
   },
 
-  exists: async (project: ProjectJson, sha: string): Promise<boolean> => {
-    return Commit.exists(project, sha);
+  exists: async (projectJson: ProjectJson, sha: string): Promise<boolean> => {
+    const project = await Project.get(projectJson.id);
+    return await Commit.exists(project, sha);
   },
 
   create: async (
@@ -32,19 +34,20 @@ const commitsService = {
     const authorEmail = attributes["author_email"]
       ? (attributes["author_email"] as string)
       : config.defaultCommitAuthorEmail;
-    const project = new Project(projectJson.id);
-    const commitSha = await project.commit(
-      authorName,
-      authorEmail,
-      commitMessage
-    );
+    const project = await Project.get(projectJson.id);
 
-    const commit = await Commit.exact(projectJson, commitSha);
+    const commit = await Commit.make(
+      project,
+      commitMessage,
+      authorName,
+      authorEmail
+    );
     return commit.toJson();
   },
 
   read: async (projectJson: ProjectJson, id: string): Promise<CommitJson> => {
-    const commit = await Commit.exact(projectJson, id);
+    const project = await Project.get(projectJson.id);
+    const commit = await Commit.get(project, id);
     return commit.toJson();
   },
 };
