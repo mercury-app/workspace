@@ -5,14 +5,16 @@ import git from "isomorphic-git";
 
 import config from "../../config";
 
-interface ProjectsDbEntry extends Object {
+interface ProjectDbEntry extends Object {
   id: string;
+  name: string;
 }
 
 export interface ProjectJson extends Object {
   id: string;
   type: string;
   attributes?: {
+    name: string;
     path: string;
     canvas: Record<string, unknown>;
     dag: Record<string, unknown>;
@@ -23,14 +25,20 @@ export interface ProjectJson extends Object {
 export class Projects {
   static readonly type = "projects";
 
-  static async get(): Promise<Array<Project>> {
-    const projectsDbPath = config.projectsDbPath;
-    const projectsDbData = await fsp.readFile(projectsDbPath, {
+  static async db(): Promise<Array<ProjectDbEntry>> {
+    const projectDbPath = config.projectDbPath;
+    const projectDbData = await fsp.readFile(projectDbPath, {
       encoding: "utf-8",
       flag: "r",
     });
-    const projectsDbJson = JSON.parse(projectsDbData) as Array<ProjectsDbEntry>;
-    return Promise.all(projectsDbJson.map((obj) => Project.get(obj.id)));
+    return JSON.parse(projectDbData) as Array<ProjectDbEntry>;
+  }
+
+  static async get(): Promise<Array<Project>> {
+    const projectDb = await Projects.db();
+    return Promise.all(
+      projectDb.map((projectEntry) => Project.get(projectEntry.id))
+    );
   }
 }
 
@@ -39,6 +47,7 @@ export class Project {
   private static readonly _dagJsonFilename = "dag.json";
 
   private readonly _id: string;
+  private readonly _name: string;
   private readonly _path: string;
   private readonly _stateFilesDir: string;
   private readonly _notebooksDir: string;
@@ -48,9 +57,9 @@ export class Project {
   private _dag: Record<string, unknown>;
   private _repo: { fs: typeof fsp; dir: string };
 
-  static async make(): Promise<Project> {
+  static async make(name: string): Promise<Project> {
     const id = uuid.v4();
-    const project = new Project(id);
+    const project = new Project(id, name);
     project._createProjectDir();
     project._addProjectEntryToDb();
     project._writeProjectFiles();
@@ -60,18 +69,27 @@ export class Project {
   }
 
   static async get(id: string): Promise<Project> {
-    const project = new Project(id);
+    const projectDb = await Projects.db();
+    const projectEntry = projectDb.find(
+      (projectEntry) => projectEntry.id === id
+    );
+    if (!projectEntry) {
+      return null;
+    }
+
+    const project = new Project(projectEntry.id, projectEntry.name);
     project._readProjectFiles();
     return project;
   }
 
   static async exists(id: string): Promise<boolean> {
-    const projects = await Projects.get();
-    return projects.some((project) => project.id === id);
+    const projectDb = await Projects.db();
+    return projectDb.some((projectEntry) => projectEntry.id === id);
   }
 
-  private constructor(id: string) {
+  private constructor(id: string, name: string) {
     this._id = id;
+    this._name = name;
     const projectParentDirPath = config.projectsDirPath;
     this._path = `${projectParentDirPath}/${this._id}`;
     this._stateFilesDir = `${this._path}/.mercury`;
@@ -108,29 +126,31 @@ export class Project {
   }
 
   private async _addProjectEntryToDb(): Promise<void> {
-    const projectsDbPath = config.projectsDbPath;
-    let projectsData = await fsp.readFile(projectsDbPath, {
+    const projectDbPath = config.projectDbPath;
+    let projectDbData = await fsp.readFile(projectDbPath, {
       encoding: "utf-8",
       flag: "r",
     });
-    const projects = JSON.parse(projectsData);
-    projects.push({
+    const projectDb = JSON.parse(projectDbData);
+    const projectEntry: ProjectDbEntry = {
       id: this._id,
-    });
-    projectsData = JSON.stringify(projects);
-    await fsp.writeFile(projectsDbPath, projectsData, { encoding: "utf-8" });
+      name: this._name,
+    };
+    projectDb.push(projectEntry);
+    projectDbData = JSON.stringify(projectDb);
+    await fsp.writeFile(projectDbPath, projectDbData, { encoding: "utf-8" });
   }
 
   private async _removeProjectEntryFromDb(): Promise<void> {
-    const projectsDbPath = config.projectsDbPath;
-    let projectsData = await fsp.readFile(projectsDbPath, {
+    const projectDbPath = config.projectDbPath;
+    let projectDbData = await fsp.readFile(projectDbPath, {
       encoding: "utf-8",
       flag: "r",
     });
-    let projects = JSON.parse(projectsData);
-    projects = projects.filter((project: Project) => project.id !== this._id);
-    projectsData = JSON.stringify(projects);
-    await fsp.writeFile(projectsDbPath, projectsData, { encoding: "utf-8" });
+    let projectDb = JSON.parse(projectDbData);
+    projectDb = projectDb.filter((project: Project) => project.id !== this._id);
+    projectDbData = JSON.stringify(projectDb);
+    await fsp.writeFile(projectDbPath, projectDbData, { encoding: "utf-8" });
   }
 
   private async _readProjectFiles(): Promise<void> {
@@ -198,6 +218,7 @@ export class Project {
       id: this._id,
       type: Projects.type,
       attributes: {
+        name: this._name,
         path: this._path,
         canvas: this._canvas,
         dag: this._dag,

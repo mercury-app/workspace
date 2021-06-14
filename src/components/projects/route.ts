@@ -1,6 +1,10 @@
 import * as router from "koa-joi-router";
 
-import { ConflictError, ForbiddenError } from "../../errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  UnprocessableEntityError,
+} from "../../errors";
 import { Projects } from "./model";
 import projectsService from "./service";
 
@@ -32,11 +36,19 @@ projects.get("/projects", async (ctx) => {
 });
 
 projects.post("/projects", async (ctx) => {
-  if (ctx.request.body["data"]["type"] !== Projects.type) {
+  const requestData = ctx.request.body["data"];
+  if (requestData["type"] !== Projects.type) {
     ctx.throw(409, "Conflict: resource type does not match resource endpoint");
   }
-  const project = await projectsService.create();
-  ctx.body = { data: project };
+
+  try {
+    const project = await projectsService.create(requestData["attributes"]);
+    ctx.body = { data: project };
+  } catch (error) {
+    if (error instanceof UnprocessableEntityError) {
+      ctx.throw(422, error.detail);
+    }
+  }
 });
 
 projects.get("/projects/:project", async (ctx) => {

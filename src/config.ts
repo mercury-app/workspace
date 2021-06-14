@@ -10,7 +10,7 @@ if (!fs.existsSync(projectsDirPath)) {
   fs.mkdirSync(projectsDirPath);
 }
 
-const projectsDbPath = `${projectsDirPath}/projects_db.json`;
+const projectsDbPath = `${projectsDirPath}/project_db.json`;
 if (!fs.existsSync(projectsDbPath)) {
   const data = JSON.stringify([]);
   fs.writeFileSync(projectsDbPath, data, { encoding: "utf-8" });
@@ -18,7 +18,7 @@ if (!fs.existsSync(projectsDbPath)) {
 
 const config = {
   projectsDirPath: projectsDirPath,
-  projectsDbPath: projectsDbPath,
+  projectDbPath: projectsDbPath,
   defaultCommitAuthorName: "Mercury",
   defaultCommitAuthorEmail: "auto.commit@mercury",
   defaultCommitMessage: "Auto-committed changes to files",

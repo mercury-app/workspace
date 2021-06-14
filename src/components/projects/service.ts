@@ -1,4 +1,8 @@
-import { ConflictError, ForbiddenError } from "../../errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  UnprocessableEntityError,
+} from "../../errors";
 import { Projects, Project, ProjectJson } from "./model";
 
 const projectCache = new Map<string, Project>();
@@ -13,8 +17,17 @@ const projectsService = {
     return Project.exists(id);
   },
 
-  create: async (): Promise<ProjectJson> => {
-    const project = await Project.make();
+  create: async (attributes: Record<string, unknown>): Promise<ProjectJson> => {
+    if (!attributes) {
+      throw new UnprocessableEntityError("project attributes are missing");
+    }
+
+    const projectName = attributes["name"] as string;
+    if (!projectName) {
+      throw new UnprocessableEntityError("project name is missing");
+    }
+
+    const project = await Project.make(projectName);
     projectCache.set(project.id, project);
     return project.toJson();
   },
@@ -41,7 +54,7 @@ const projectsService = {
 
     const attributeNames = new Set(Object.keys(attributes));
     const restrictedAttributeNames = new Set(["path", "notebooks_dir"]);
-    const recognizedAttributeNames = new Set(["canvas", "dag"]);
+    const recognizedAttributeNames = new Set(["name", "canvas", "dag"]);
 
     const conflicts = new Set(
       [...attributeNames].filter((i) => restrictedAttributeNames.has(i))

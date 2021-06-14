@@ -3,6 +3,7 @@ import * as router from "koa-joi-router";
 import { UnprocessableEntityError } from "../../errors";
 import { ProjectJson } from "../projects/model";
 import projectsService from "../projects/service";
+import { Commits } from "./model";
 import commitsService from "./service";
 
 const commits = router();
@@ -42,7 +43,7 @@ commits.get("/projects/:project/commits", async (ctx) => {
 
 commits.post("/projects/:project/commits", async (ctx) => {
   const requestData = ctx.request.body["data"];
-  if (requestData["type"] !== "commits") {
+  if (requestData["type"] !== Commits.type) {
     ctx.throw(409, "Conflict: resource type does not match resource endpoint");
   }
 
