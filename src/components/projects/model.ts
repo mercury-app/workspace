@@ -55,16 +55,16 @@ export class Project {
   private readonly _dagJsonPath: string;
   private _canvas: Record<string, unknown>;
   private _dag: Record<string, unknown>;
-  private _repo: { fs: typeof fsp; dir: string };
+  private _repo: { fs: typeof fs; dir: string };
 
   static async make(name: string): Promise<Project> {
     const id = uuid.v4();
     const project = new Project(id, name);
-    project._createProjectDir();
-    project._addProjectEntryToDb();
-    project._writeProjectFiles();
-    project._initRepo();
-    project._readProjectFiles();
+    await project._createProjectDir();
+    await project._addProjectEntryToDb();
+    await project._writeProjectFiles();
+    await project._initRepo();
+    await project._readProjectFiles();
     return project;
   }
 
@@ -78,7 +78,7 @@ export class Project {
     }
 
     const project = new Project(projectEntry.id, projectEntry.name);
-    project._readProjectFiles();
+    await project._readProjectFiles();
     return project;
   }
 
@@ -101,20 +101,14 @@ export class Project {
     this._dag = {};
 
     // A convenience structure that is passed in calls to isomorphic git APIs
-    this._repo = { fs: fsp, dir: this._path };
+    this._repo = { fs: fs, dir: this._path };
   }
 
   private async _createProjectDir(): Promise<boolean> {
     try {
-      if (!fs.existsSync(this._path)) {
-        await fsp.mkdir(this._path);
-      }
-      if (!fs.existsSync(this._stateFilesDir)) {
-        await fsp.mkdir(this._stateFilesDir);
-      }
-      if (!fs.existsSync(this._notebooksDir)) {
-        await fsp.mkdir(this._notebooksDir);
-      }
+      await fsp.mkdir(this._path, { recursive: true });
+      await fsp.mkdir(this._stateFilesDir, { recursive: true });
+      await fsp.mkdir(this._notebooksDir, { recursive: true });
     } catch (exception) {
       return false;
     }
