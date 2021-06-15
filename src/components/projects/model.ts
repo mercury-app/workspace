@@ -168,7 +168,7 @@ export class Project {
     object: Record<string, unknown>,
     path: string
   ): Promise<void> {
-    const data = JSON.stringify(object);
+    const data = JSON.stringify(object, null, 2);
     await fsp.writeFile(path, data, { encoding: "utf-8" });
   }
 
