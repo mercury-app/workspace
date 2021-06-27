@@ -24,6 +24,7 @@ export class Commits {
     const commitResults = await git.log({
       fs,
       dir: project.path,
+      ref: Project.mainBranch,
     });
     const commits = Promise.all(
       commitResults.map((result) => Commit.get(project, result.oid))

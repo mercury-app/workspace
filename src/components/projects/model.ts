@@ -47,6 +47,7 @@ export class Projects {
 export class Project {
   private static readonly _canvasJsonFilename = "canvas.json";
   private static readonly _dagJsonFilename = "dag.json";
+  static readonly mainBranch = "master";
 
   private readonly _id: string;
   private readonly _name: string;
@@ -195,7 +196,7 @@ export class Project {
   }
 
   private async _resolveMain(): Promise<string> {
-    return await git.resolveRef({ ...this._repo, ref: "master" });
+    return await git.resolveRef({ ...this._repo, ref: Project.mainBranch });
   }
 
   private async _checkout(commitRef: string): Promise<void> {
@@ -206,10 +207,18 @@ export class Project {
       force: true,
       filepaths: ["."],
     });
-    await git.checkout({
-      ...this._repo,
-      ref: commitRef,
-    });
+
+    if (commitRef == this.latestCommit) {
+      await git.checkout({
+        ...this._repo,
+        ref: Project.mainBranch,
+      });
+    } else {
+      await git.checkout({
+        ...this._repo,
+        ref: commitRef,
+      });
+    }
   }
 
   get id(): string {
@@ -309,15 +318,14 @@ export class Project {
     // If we are on a temporary branch, delete the main branch and rename
     // temporary to be main.
     if (tempBranch) {
-      const mainBranch = "master";
       await git.deleteBranch({
         ...this._repo,
-        ref: mainBranch,
+        ref: Project.mainBranch,
       });
       await git.renameBranch({
         ...this._repo,
         oldref: tempBranch,
-        ref: mainBranch,
+        ref: Project.mainBranch,
         checkout: true,
       });
     }
