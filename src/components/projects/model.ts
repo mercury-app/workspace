@@ -19,6 +19,8 @@ export interface ProjectJson extends Object {
     canvas: Record<string, unknown>;
     dag: Record<string, unknown>;
     notebooks_dir: string;
+    current_commit: string;
+    latest_commit: string;
   };
 }
 
@@ -56,6 +58,8 @@ export class Project {
   private _canvas: Record<string, unknown>;
   private _dag: Record<string, unknown>;
   private _repo: { fs: typeof fs; dir: string };
+  private _latestCommit: string;
+  private _currentCommit: string;
 
   static async make(name: string): Promise<Project> {
     const id = uuid.v4();
@@ -79,6 +83,9 @@ export class Project {
 
     const project = new Project(projectEntry.id, projectEntry.name);
     await project._readProjectFiles();
+    project._currentCommit = await project._resolveHead();
+    project._latestCommit = await project._resolveMain();
+
     return project;
   }
 
@@ -102,6 +109,8 @@ export class Project {
 
     // A convenience structure that is passed in calls to isomorphic git APIs
     this._repo = { fs: fs, dir: this._path };
+    this._currentCommit = "";
+    this._latestCommit = "";
   }
 
   private async _createProjectDir(): Promise<boolean> {
@@ -181,6 +190,28 @@ export class Project {
     );
   }
 
+  private async _resolveHead(): Promise<string> {
+    return await git.resolveRef({ ...this._repo, ref: "HEAD" });
+  }
+
+  private async _resolveMain(): Promise<string> {
+    return await git.resolveRef({ ...this._repo, ref: "master" });
+  }
+
+  private async _checkout(commitRef: string): Promise<void> {
+    // Discard any current changes to the existing branch and then attempt to
+    // checkout to the given ref
+    await git.checkout({
+      ...this._repo,
+      force: true,
+      filepaths: ["."],
+    });
+    await git.checkout({
+      ...this._repo,
+      ref: commitRef,
+    });
+  }
+
   get id(): string {
     return this._id;
   }
@@ -207,6 +238,19 @@ export class Project {
     this._writeObjectToJsonFile(this._dag, this._dagJsonPath);
   }
 
+  get currentCommit(): string {
+    return this._currentCommit;
+  }
+
+  set currentCommit(commitRef: string) {
+    this._checkout(commitRef);
+    this._currentCommit = commitRef;
+  }
+
+  get latestCommit(): string {
+    return this._latestCommit;
+  }
+
   public toJson(): ProjectJson {
     return {
       id: this._id,
@@ -217,6 +261,8 @@ export class Project {
         canvas: this._canvas,
         dag: this._dag,
         notebooks_dir: this._notebooksDir,
+        current_commit: this._currentCommit,
+        latest_commit: this._latestCommit,
       },
     };
   }
@@ -239,7 +285,19 @@ export class Project {
         )
       );
 
-    const sha = await git.commit({
+    const currentBranch = await git.currentBranch({ ...this._repo });
+    let tempBranch = "";
+    // If we are in a detached head state, create a new branch from here
+    if (currentBranch === undefined) {
+      tempBranch = "temp";
+      await git.branch({
+        ...this._repo,
+        ref: tempBranch,
+        checkout: true,
+      });
+    }
+
+    const commitRef = await git.commit({
       ...this._repo,
       author: {
         name: authorName ? authorName : config.defaultCommitAuthorName,
@@ -248,7 +306,25 @@ export class Project {
       message: message ? message : config.defaultCommitMessage,
     });
 
-    return sha;
+    // If we are on a temporary branch, delete the main branch and rename
+    // temporary to be main.
+    if (tempBranch) {
+      const mainBranch = "master";
+      await git.deleteBranch({
+        ...this._repo,
+        ref: mainBranch,
+      });
+      await git.renameBranch({
+        ...this._repo,
+        oldref: tempBranch,
+        ref: mainBranch,
+        checkout: true,
+      });
+    }
+
+    this._latestCommit = commitRef;
+    this._currentCommit = commitRef;
+    return commitRef;
   }
 
   public async delete(): Promise<void> {

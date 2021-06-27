@@ -15,8 +15,17 @@ const _validateProjectAttributes = (
   }
 
   const attributeNames = new Set(Object.keys(attributes));
-  const restrictedAttributeNames = new Set(["path", "notebooks_dir"]);
-  const recognizedAttributeNames = new Set(["name", "canvas", "dag"]);
+  const restrictedAttributeNames = new Set([
+    "path",
+    "notebooks_dir",
+    "latest_commit",
+  ]);
+  const recognizedAttributeNames = new Set([
+    "name",
+    "canvas",
+    "dag",
+    "current_commit",
+  ]);
 
   const conflicts = new Set(
     [...attributeNames].filter((i) => restrictedAttributeNames.has(i))
@@ -92,6 +101,9 @@ const projectsService = {
     }
     if (attributeNames.has("dag")) {
       project.dag = attributes["dag"] as Record<string, unknown>;
+    }
+    if (attributeNames.has("current_commit")) {
+      project.currentCommit = attributes["current_commit"] as string;
     }
 
     return project.toJson();
