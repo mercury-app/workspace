@@ -97,6 +97,9 @@ const projectsService = {
     _validateProjectAttributes(attributes);
 
     const attributeNames = new Set(Object.keys(attributes));
+    if (attributeNames.has("name")) {
+      project.rename(attributes["name"] as string);
+    }
     if (attributeNames.has("canvas")) {
       project.canvas = attributes["canvas"] as Record<string, unknown>;
     }

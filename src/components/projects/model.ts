@@ -51,12 +51,12 @@ export class Project {
   static readonly mainBranch = "master";
 
   private readonly _id: string;
-  private readonly _name: string;
   private readonly _path: string;
   private readonly _stateFilesDir: string;
   private readonly _notebooksDir: string;
   private readonly _canvasJsonPath: string;
   private readonly _dagJsonPath: string;
+  private _name: string;
   private _canvas: Record<string, unknown>;
   private _dag: Record<string, unknown>;
   private _repo: { fs: typeof fs; dir: string };
@@ -240,6 +240,10 @@ export class Project {
     return this._path;
   }
 
+  get name(): string {
+    return this._name;
+  }
+
   get canvas(): Record<string, unknown> {
     return this._canvas;
   }
@@ -345,6 +349,23 @@ export class Project {
     this._latestCommit = commitRef;
     this._currentCommit = commitRef;
     return commitRef;
+  }
+
+  public async rename(name: string): Promise<void> {
+    this._name = name;
+
+    const projectDbPath = config.projectDbPath;
+    let projectDbData = await fsp.readFile(projectDbPath, {
+      encoding: "utf-8",
+      flag: "r",
+    });
+    const projectDb = JSON.parse(projectDbData);
+    const project = projectDb.find(
+      (project: Project) => project.id === this._id
+    );
+    project.name = name;
+    projectDbData = JSON.stringify(projectDb);
+    await fsp.writeFile(projectDbPath, projectDbData, { encoding: "utf-8" });
   }
 
   public async delete(): Promise<void> {
