@@ -21,6 +21,7 @@ export interface ProjectJson extends Object {
     notebooks_dir: string;
     current_commit: string;
     latest_commit: string;
+    has_uncommitted_changes: boolean;
   };
 }
 
@@ -221,6 +222,16 @@ export class Project {
     }
   }
 
+  private async _modifiedFiles(): Promise<Array<string>> {
+    const FILE = 0;
+    const HEAD = 1;
+    const WORKDIR = 2;
+    const modifiedFiles = (await git.statusMatrix({ ...this._repo }))
+      .filter((row) => row[HEAD] !== row[WORKDIR])
+      .map((row) => row[FILE]);
+    return modifiedFiles;
+  }
+
   get id(): string {
     return this._id;
   }
@@ -260,7 +271,7 @@ export class Project {
     return this._latestCommit;
   }
 
-  public toJson(): ProjectJson {
+  public async toJson(): Promise<ProjectJson> {
     return {
       id: this._id,
       type: Projects.type,
@@ -272,6 +283,7 @@ export class Project {
         notebooks_dir: this._notebooksDir,
         current_commit: this._currentCommit,
         latest_commit: this._latestCommit,
+        has_uncommitted_changes: (await this._modifiedFiles()).length > 0,
       },
     };
   }

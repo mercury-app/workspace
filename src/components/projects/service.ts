@@ -19,6 +19,7 @@ const _validateProjectAttributes = (
     "path",
     "notebooks_dir",
     "latest_commit",
+    "has_uncommitted_changes",
   ]);
   const recognizedAttributeNames = new Set([
     "name",
@@ -53,7 +54,7 @@ const _validateProjectAttributes = (
 const projectsService = {
   readAll: async (): Promise<Array<ProjectJson>> => {
     const projects = await Projects.get();
-    return projects.map((project) => project.toJson());
+    return Promise.all(projects.map(async (project) => await project.toJson()));
   },
 
   exists: async (id: string): Promise<boolean> => {
