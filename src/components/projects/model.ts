@@ -17,7 +17,7 @@ export interface ProjectJson extends Object {
     name: string;
     path: string;
     canvas: Record<string, unknown>;
-    dag: Record<string, unknown>;
+    workflow: Record<string, unknown>;
     notebooks_dir: string;
     current_commit: string;
     latest_commit: string;
@@ -47,7 +47,7 @@ export class Projects {
 
 export class Project {
   private static readonly _canvasJsonFilename = "canvas.json";
-  private static readonly _dagJsonFilename = "dag.json";
+  private static readonly _workflowJsonFilename = "workflow.json";
   static readonly mainBranch = "master";
 
   private readonly _id: string;
@@ -55,10 +55,10 @@ export class Project {
   private readonly _stateFilesDir: string;
   private readonly _notebooksDir: string;
   private readonly _canvasJsonPath: string;
-  private readonly _dagJsonPath: string;
+  private readonly _workflowJsonPath: string;
   private _name: string;
   private _canvas: Record<string, unknown>;
-  private _dag: Record<string, unknown>;
+  private _workflow: Record<string, unknown>;
   private _repo: { fs: typeof fs; dir: string };
   private _latestCommit: string;
   private _currentCommit: string;
@@ -105,9 +105,9 @@ export class Project {
     this._notebooksDir = `${this._path}/notebooks`;
 
     this._canvasJsonPath = `${this._stateFilesDir}/${Project._canvasJsonFilename}`;
-    this._dagJsonPath = `${this._stateFilesDir}/${Project._dagJsonFilename}`;
+    this._workflowJsonPath = `${this._stateFilesDir}/${Project._workflowJsonFilename}`;
     this._canvas = {};
-    this._dag = {};
+    this._workflow = {};
 
     // A convenience structure that is passed in calls to isomorphic git APIs
     this._repo = { fs: fs, dir: this._path };
@@ -160,7 +160,7 @@ export class Project {
 
   private async _readProjectFiles(): Promise<void> {
     this._canvas = await this._readJsonFileAsObject(this._canvasJsonPath);
-    this._dag = await this._readJsonFileAsObject(this._dagJsonPath);
+    this._workflow = await this._readJsonFileAsObject(this._workflowJsonPath);
   }
 
   private async _readJsonFileAsObject(
@@ -172,7 +172,7 @@ export class Project {
 
   private async _writeProjectFiles(): Promise<void> {
     await this._writeObjectToJsonFile(this._canvas, this._canvasJsonPath);
-    await this._writeObjectToJsonFile(this._dag, this._dagJsonPath);
+    await this._writeObjectToJsonFile(this._workflow, this._workflowJsonPath);
   }
 
   private async _writeObjectToJsonFile(
@@ -253,13 +253,13 @@ export class Project {
     this._writeObjectToJsonFile(this._canvas, this._canvasJsonPath);
   }
 
-  get dag(): Record<string, unknown> {
-    return this._dag;
+  get workflow(): Record<string, unknown> {
+    return this._workflow;
   }
 
-  set dag(dag: Record<string, unknown>) {
-    this._dag = dag;
-    this._writeObjectToJsonFile(this._dag, this._dagJsonPath);
+  set workflow(workflow: Record<string, unknown>) {
+    this._workflow = workflow;
+    this._writeObjectToJsonFile(this._workflow, this._workflowJsonPath);
   }
 
   get currentCommit(): string {
@@ -283,7 +283,7 @@ export class Project {
         name: this._name,
         path: this._path,
         canvas: this._canvas,
-        dag: this._dag,
+        workflow: this._workflow,
         notebooks_dir: this._notebooksDir,
         current_commit: this._currentCommit,
         latest_commit: this._latestCommit,

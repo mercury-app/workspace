@@ -24,7 +24,7 @@ const _validateProjectAttributes = (
   const recognizedAttributeNames = new Set([
     "name",
     "canvas",
-    "dag",
+    "workflow",
     "current_commit",
   ]);
 
@@ -103,8 +103,8 @@ const projectsService = {
     if (attributeNames.has("canvas")) {
       project.canvas = attributes["canvas"] as Record<string, unknown>;
     }
-    if (attributeNames.has("dag")) {
-      project.dag = attributes["dag"] as Record<string, unknown>;
+    if (attributeNames.has("workflow")) {
+      project.workflow = attributes["workflow"] as Record<string, unknown>;
     }
     if (attributeNames.has("current_commit")) {
       project.currentCommit = attributes["current_commit"] as string;
