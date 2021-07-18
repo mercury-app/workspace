@@ -64,7 +64,7 @@ export class Project {
   private _currentCommit: string;
 
   static async make(name: string): Promise<Project> {
-    const id = uuid.v4();
+    const id = uuid.v4().replace(/-/g, "");
     const project = new Project(id, name);
     await project._createProjectDir();
     await project._addProjectEntryToDb();
