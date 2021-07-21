@@ -22,6 +22,7 @@ const config = {
   defaultCommitAuthorName: "Mercury",
   defaultCommitAuthorEmail: "auto.commit@mercury",
   defaultCommitMessage: "Auto-committed changes to files",
+  defaultPortRange: [50000, 50099] as [number, number],
 };
 
 export default config;

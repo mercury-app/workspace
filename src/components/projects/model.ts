@@ -8,6 +8,7 @@ import config from "../../config";
 interface ProjectDbEntry extends Object {
   id: string;
   name: string;
+  port_range: [number, number];
 }
 
 export interface ProjectJson extends Object {
@@ -22,6 +23,7 @@ export interface ProjectJson extends Object {
     current_commit: string;
     latest_commit: string;
     has_uncommitted_changes: boolean;
+    port_range: [number, number];
   };
 }
 
@@ -62,6 +64,7 @@ export class Project {
   private _repo: { fs: typeof fs; dir: string };
   private _latestCommit: string;
   private _currentCommit: string;
+  private _portRange: [number, number];
 
   static async make(name: string): Promise<Project> {
     const id = uuid.v4().replace(/-/g, "");
@@ -84,6 +87,8 @@ export class Project {
     }
 
     const project = new Project(projectEntry.id, projectEntry.name);
+    project._portRange = projectEntry.port_range;
+
     await project._readProjectFiles();
     project._currentCommit = await project._resolveHead();
     project._latestCommit = await project._resolveMain();
@@ -136,10 +141,30 @@ export class Project {
       encoding: "utf-8",
       flag: "r",
     });
-    const projectDb = JSON.parse(projectDbData);
+    const projectDb = JSON.parse(projectDbData) as Array<ProjectDbEntry>;
+
+    // Find out which shortest port range is available
+    const occupiedPortRanges = projectDb.map(
+      (projectEntry) => projectEntry.port_range
+    );
+    const adjustPortRange = (portRange: [number, number]): [number, number] => {
+      if (
+        occupiedPortRanges.find(
+          (existingPortRange) =>
+            existingPortRange[0] === portRange[0] &&
+            existingPortRange[1] === portRange[1]
+        )
+      ) {
+        return adjustPortRange([portRange[0] + 100, portRange[1] + 100]);
+      }
+      return portRange;
+    };
+    this._portRange = adjustPortRange(config.defaultPortRange);
+
     const projectEntry: ProjectDbEntry = {
       id: this._id,
       name: this._name,
+      port_range: this._portRange,
     };
     projectDb.push(projectEntry);
     projectDbData = JSON.stringify(projectDb);
@@ -153,7 +178,9 @@ export class Project {
       flag: "r",
     });
     let projectDb = JSON.parse(projectDbData);
-    projectDb = projectDb.filter((project: Project) => project.id !== this._id);
+    projectDb = projectDb.filter(
+      (projectEntry: ProjectDbEntry) => projectEntry.id !== this._id
+    );
     projectDbData = JSON.stringify(projectDb);
     await fsp.writeFile(projectDbPath, projectDbData, { encoding: "utf-8" });
   }
@@ -288,6 +315,7 @@ export class Project {
         current_commit: this._currentCommit,
         latest_commit: this._latestCommit,
         has_uncommitted_changes: (await this._modifiedFiles()).length > 0,
+        port_range: this._portRange,
       },
     };
   }
