@@ -5,8 +5,6 @@ import {
 } from "../../errors";
 import { Projects, Project, ProjectJson } from "./model";
 
-const projectCache = new Map<string, Project>();
-
 const _validateProjectAttributes = (
   attributes: Record<string, unknown>
 ): void => {
@@ -70,15 +68,10 @@ const projectsService = {
     }
 
     const project = await Project.make(projectName);
-    projectCache.set(project.id, project);
     return project.toJson();
   },
 
   read: async (id: string): Promise<ProjectJson> => {
-    if (projectCache.has(id)) {
-      return projectCache.get(id).toJson();
-    }
-
     const project = await Project.get(id);
     return project.toJson();
   },
@@ -87,15 +80,9 @@ const projectsService = {
     id: string,
     attributes: Record<string, unknown>
   ): Promise<ProjectJson> => {
-    let project: Project = null;
-    if (projectCache.has(id)) {
-      project = projectCache.get(id);
-    } else {
-      project = await Project.get(id);
-    }
-
     _validateProjectAttributes(attributes);
 
+    const project = await Project.get(id);
     const attributeNames = new Set(Object.keys(attributes));
     if (attributeNames.has("name")) {
       project.rename(attributes["name"] as string);
@@ -114,11 +101,6 @@ const projectsService = {
   },
 
   delete: async (id: string): Promise<void> => {
-    if (projectCache.has(id)) {
-      projectCache.get(id).delete();
-      return;
-    }
-
     const project = await Project.get(id);
     project.delete();
   },
